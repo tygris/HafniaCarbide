@@ -1,32 +1,30 @@
 # This file contains the function HOC, used to randomly generate the 3d coordinates for Hafnium Carbide.
 import numpy as np
-from random import random
 
 '''
-FIX COMMENTS
-Function to define the probability of sampling carbon at layer z given a linear change between the outer layers of the 
-Hafnium carbide material, and the middle layer(s), given the expected percent of Carbon versus Oxygen overall and at the outermost layers. 
-The assumption is that the outer layers have more Oxygen or Carbon, and the inner layers have a greater mixture of the 
-two atoms.
-The change from outer edge layer to inner mixed layers is linear, with the rate of change determined by the number of 
-layers in the boundary.
-Input z, integer, the specific layer of the material being considered with index starting at 0. This 
-         function can be used to define a lambda functional with z as the variable.
-Input maxz, even integer, the number of layers in the material, should be twice the number of Hafnium in each vertical column.
-Input carbonPercent, float in [0,1], the expected average percent of overall carbon in the material out of the total Carbon or Oxygen atoms.
-Input outerPercent,  list of floats in [0,1], the average percent of carbon in the topmost outer layers is outerPercent[0], and 
-         the average percent of carbon at the bottom outer layers is outerPercent[1]. The default is outerPercent  = [0, 1].
-Input outerLayer, list of two integers. outerLayer[0] is the number of layers at the top with percent carbon = outerPercent[0],
-         and outerLayer[1] is the number of layers at the bottom of the material with percent carbon = outerPercent[1].
-         The default is [1,1].
-Input boundary, list of two integers. boundary[0] is the number of layers below outerLayer[0] that the percent of Carbon 
-         linearly transitions from outerPercent[0] to carbonPercent over. boundary[1] is likewise the number of layers above 
-         outerLayer[1] that it takes to linearly transition between. The default is that the two layers exactly in the middle
-         of the material return carbonPercent, and all other unaccounted for layers linearly transition between outer and the middle.
-Output, the expected percent of Carbon at layer z (given the inputs and linear transition assumption).  
+Function to define the probability of sampling carbon at layer z given a linear change between the vertical layers of the 
+Hafnia Carbide material. The assumption is that the outer layers have more Oxygen or Carbon, and the inner layers have a greater mixture of the 
+two atoms. The change from outer edge layer to inner mixed layers is linear, where the slopes depend on the function inputs.
+Input z, integer, the specific layer of the material being considered with index starting at 0. This function is designed 
+         for defining a lambda functional with z as the variable.
+Input maxz, even integer, the number of layers in the material, equal to twice the number of Hafnium in each vertical column.
+Input carbonPercent, float in [0,1], the expected average percent of carbon versus oxygen atoms in the central layers of the material.
+Input boundaryPercent,  list of 2 floats in [0,1], the average percent of carbon in the bottom boundary layers is outerPercent[0], and 
+         the average percent of carbon at the top boundary layers is outerPercent[1]. The default is boundaryPercent  = [1, 0].
+Input boundary, list of two integers. boundary[0] is the number of layers in the bottom boundary layers,
+         and boundary[1] is the number of layers in the top boundary layers of the material. The default is boundary  = [1,1].
+Input transition, list of two integers. transition[0] is the number of layers above the bottom boundary layers that the percent of Carbon 
+         linearly transitions from boundaryPercent[0] to carbonPercent over. transition[1] is likewise the number of layers below
+         boundary[1] that the probability of choosing Carbon linearly transitions between the two percents. 
+         The default is that the two layers exactly in the middle of the material return carbonPercent, and all other 
+         unaccounted for layers linearly transition between boundary and those middle layers.
+Output, the expected percent of Carbon at layer z (given the inputs and linear transition assumption). 
+*Note that the overall percent of Carbon in the material is not equal to carbonPercent, but to the sum of outputs for all z 
+ divided by maxz
+Author: Natalie Wellen 
 '''
-def zvariation(z, maxz, carbonPercent, boundaryPercent = [1,0], boundary = [1,1], transition = 0):
-    if transition == 0:
+def zvariation(z, maxz, carbonPercent, boundaryPercent = [1,0], boundary = [1,1], transition = [-1,-1]):
+    if transition[0] == -1:
         transition[0] = maxz/2-1
         transition[1] = transition[0] - boundary[0]
         transition[0] = transition[0] - boundary[1]
@@ -41,13 +39,13 @@ def zvariation(z, maxz, carbonPercent, boundaryPercent = [1,0], boundary = [1,1]
     if z < boundary[0]:
         return boundaryPercent[0]
     elif z < boundary[0]+transition[0]:
-        return boundaryPercent[0] - (boundaryPercent[0]-carbonPercent)/transition[0]*z
+        return boundaryPercent[0] - (boundaryPercent[0]-carbonPercent)/transition[0]*(z+1-boundary[0])
     elif maxz - z <= boundary[1]:
         if maxz - z < 1:
             print("WARNING: The vertical distribution you are using assumes fewer total layers.")
         return boundaryPercent[1]
     elif maxz - z <= boundary[1] + transition[1]:
-        return carbonPercent - (boundaryPercent[1]-carbonPercent)/transition[1]*z
+        return boundaryPercent[1] + (carbonPercent-boundaryPercent[1])/transition[1]*(maxz-z-boundary[1])
     else:
         return carbonPercent
 
@@ -66,6 +64,7 @@ def zvariation(z, maxz, carbonPercent, boundaryPercent = [1,0], boundary = [1,1]
  output AtomNumbers, integer array, the number of Hafnium atoms in the first rows of HOCcoordinates,
                      the number of Oxygen atoms in the middle rows of HOCcoordinates, and
                      the number of Carbon atoms in the last rows of HOCcoordinates.
+Author: Natalie Wellen
 '''
 def hfoc(dims, verticalDist = 0):
     #Parse inputs
@@ -98,14 +97,14 @@ def hfoc(dims, verticalDist = 0):
             for x in np.arange(0, dims[0]):
                 hf = np.concatenate((hf, np.array([[2*x,2*y,2*z]]), np.array([[2*x+1, 2*y+1, 2*z]]), np.array([[2*x+1, 2*y, 2*z+1]]), np.array([[2*x, 2*y+1, 2*z+1]])), axis=0)
                 #randomly generate 4 numbers in zero 1
-                m = [random(), random(), random(), random()]
+                m = np.random.rand(2,2)
                 #save the next coordinates as O or C according to the m
                 for ii in [0, 1]:
-                    if m[ii] < cutOff0:
+                    if m[0, ii] < cutOff0:
                         c = np.concatenate((c,np.array([[2*x+1-ii,2*y+ii,2*z]])), axis = 0)
                     else:
                         o = np.concatenate((o,np.array([[2*x+1-ii, 2*y+ii, 2*z]])), axis=0)
-                    if m[ii+2] < cutOff1:
+                    if m[1, ii] < cutOff1:
                         c = np.concatenate((c, np.array([[2*x+ii,2*y+ii,2*z+1]])), axis=0)
                     else:
                         o = np.concatenate((o, np.array([[2*x+ii, 2*y+ii, 2*z+1]])), axis=0)
@@ -117,5 +116,5 @@ def hfoc(dims, verticalDist = 0):
     AtomNumbers = [len(hf), len(o), len(c)]
     return HfOCcoordinates, AtomNumbers
 
-
+#Future work: use the multiprocessing module to parallelize the for loops.
 
