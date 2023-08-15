@@ -2,6 +2,23 @@ import HfOC as hf
 import numpy as np
 import matplotlib.pyplot as plt
 
+#example 1
+# choose the dimensions of the material. For a 2 by 2 by 2 example there is 1 Hafnium molecule in each dimension
+dims = [1, 1, 1]
+# Define a function to define the probability of choosing Carbon for each non-Hafnium atom in the material depending on the vertical layer
+#material is only two atoms tall
+#And the top layer is all Oxygen with the bottom layer all Carbon. There are no transition layers.
+zdist = lambda z: hf.zvariation(z, 2, 0.5, [1, 0], [1, 1], [0, 0])
+#"randomly" generate the material and save it to the test file "test_[...]"
+coordinates, numbers = hf.write_hfoc("test", dims, zdist)
+print("The first output variable, coordinates, contains an np array of the [x, y, z] coordinates of each atom")
+print("The second output variable, numbers, contains the number of [Hf, O, C] atoms in the coordinates list, and in that order.")
+print("So, the first "+str(numbers[0])+" rows in coordinates are all Hafnium atoms.")
+print("The next "+str(numbers[1])+" atoms are Oxygen. These are at indices "+str(numbers[0])+" up to and not including "+str(numbers[0]+numbers[1])+".")
+print("And the Carbon atoms are the last "+str(numbers[2])+" rows of the coordinates variable.")
+print("Here is the array of coordinates:")
+print(coordinates)
+
 #Test 1, all oxygen and 4 hafnium
 zvar = lambda z: 0
 dims = [1, 1, 1]
@@ -92,6 +109,7 @@ for ii in x:
     y[ii] = zvar(ii)
 plt.plot(x,y)
 plt.title("Test 4")
+plt.show()
 
 #Test 5, test that the default value of transition works
 zvar = lambda z: hf.zvariation(z, 100, .5, [1,0], [10,10])
@@ -102,6 +120,7 @@ for ii in x:
 plt.figure()
 plt.plot(x,y)
 plt.title("Test 5")
+plt.show()
 
 #Test 6, test for different overall carbon percentages
 zvar = lambda z: hf.zvariation(z, 100, .4, [1,0], [10,10], [25, 25])
@@ -112,6 +131,7 @@ for ii in x:
 plt.figure()
 plt.plot(x,y)
 plt.title("Test 6")
+plt.show()
 
 #Test 7, test for different transition and boundary lengths on each side
 zvar = lambda z: hf.zvariation(z, 100, .7, [1,0], [20,10], [10, 40])
@@ -122,3 +142,4 @@ for ii in x:
 plt.figure()
 plt.plot(x,y)
 plt.title("Test 7")
+plt.show()
