@@ -116,5 +116,23 @@ def hfoc(dims, verticalDist = 0):
     AtomNumbers = [len(hf), len(o), len(c)]
     return HfOCcoordinates, AtomNumbers
 
+
+'''
+Function to print the outputs of HfOC to a .txt file
+The function also includes the number of Hafnium, Oxygen, and Carbon in the file name.
+Input string, the beginning of the file name, i.e. the date
+Input dims, list of three positive integers, the number of Hafnium in the x, y, then z dimension 
+Input zvariation, an optional lambda functional that returns the probability of choosing Carbon at each vertical layer of the material.'''
+def write_hfoc(file_name, dims, zDist = 0):
+    coordinates, number_atoms = hfoc(dims, zDist)
+    #Include the number of each atom in the file name
+    file_name = file_name+"_Hf"+str(number_atoms[0])+"_O"+str(number_atoms[1])+"_C"+str(number_atoms[2])+".txt"
+    #Overwrite already in the file with the coordinates just generated ("a" would append instead)
+    f = open(file_name, "w")
+    print(coordinates, file=f)
+    f.close()
+    return coordinates, number_atoms #the outputs are generally ignored for the file write
+
+
 #Future work: use the multiprocessing module to parallelize the for loops.
 
